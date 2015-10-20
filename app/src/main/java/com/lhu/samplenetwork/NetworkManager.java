@@ -1,5 +1,6 @@
 package com.lhu.samplenetwork;
 
+import android.graphics.Bitmap;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -42,6 +43,14 @@ public class NetworkManager {
         mExecutor.execute(new NetworkProcess<NaverMovies>(request, listener));
     }
 
+    public void getImageBitmap(NetworkRequest<Bitmap> request, OnResultListener<Bitmap> listener) {
+        mExecutor.execute(new NetworkProcess<Bitmap>(request, listener));
+    }
+
+    public <T> void getNetworkData(NetworkRequest<T> request, OnResultListener<T> listener) {
+        mExecutor.execute(new NetworkProcess<T>(request, listener));
+    }
+
     class NetworkProcess<T> implements Runnable {
         NetworkRequest<T> request;
         OnResultListener<T> listener;
@@ -65,7 +74,9 @@ public class NetworkManager {
                     mHandler.post(new Runnable() {
                         @Override
                         public void run() {
-                            listener.onSuccess(request, object);
+                            if (!request.isCancel()) {
+                                listener.onSuccess(request, object);
+                            }
                         }
                     });
                     return;
@@ -78,7 +89,9 @@ public class NetworkManager {
             mHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    listener.onFail(request, -1);
+                    if (!request.isCancel()) {
+                        listener.onFail(request, -1);
+                    }
                 }
             });
         }

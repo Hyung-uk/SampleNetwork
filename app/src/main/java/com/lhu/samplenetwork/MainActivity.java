@@ -1,5 +1,6 @@
 package com.lhu.samplenetwork;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -15,6 +16,15 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
+
+import com.begentgroup.xmlparser.XMLParser;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLEncoder;
 
 public class MainActivity extends AppCompatActivity {
     EditText keywordView;
@@ -91,7 +101,46 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    @Override
+    public static final String MOVIE_URL = "http://openapi.naver.com/search?key=55f1e342c5bce1cac340ebb6032c7d9a&query=%s&display=10&start=1&target=movie";
+    class MovieTask extends AsyncTask<String, Integer, NaverMovies> {
+
+        @Override
+        protected NaverMovies doInBackground(String... params) {
+            String keyword = params[0];
+            try {
+                String urlText = String.format(MOVIE_URL, URLEncoder.encode(keyword, "utf-8"));
+                URL url = new URL(urlText);
+                HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+                int code = conn.getResponseCode();
+                if (code == HttpURLConnection.HTTP_OK) {
+                    XMLParser parser = new XMLParser();
+                    NaverMovies movies = parser.fromXml(conn.getInputStream(), "channel", NaverMovies.class);
+                    return movies;
+                }
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(NaverMovies naverMovies) {
+            super.onPostExecute(naverMovies);
+            if (naverMovies != null) {
+                mAdapter.clear();
+                for (MovieItem item : naverMovies.items) {
+                    mAdapter.add(item);
+                }
+            } else {
+                Toast.makeText(MainActivity.this, "error", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+        @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
